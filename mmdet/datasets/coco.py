@@ -357,15 +357,15 @@ class CocoDataset(CustomDataset):
             tmp_dir = None
         result_files = self.results2json(results, jsonfile_prefix)
         return result_files, tmp_dir
-
+    
     def evaluate(self,
                  results,
                  metric='bbox',
                  logger=None,
                  jsonfile_prefix=None,
-                 classwise=False,
+                 classwise=True,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=None,
+                 iou_thrs=np.array([0.25, 0.5, 0.75]),
                  metric_items=None):
         """Evaluation in COCO protocol.
 
