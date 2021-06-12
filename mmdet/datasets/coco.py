@@ -365,7 +365,7 @@ class CocoDataset(CustomDataset):
                  jsonfile_prefix=None,
                  classwise=True,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=np.array([0.25, 0.5, 0.75]),
+                 iou_thrs=np.array([0.5]),
                  metric_items=None):
         """Evaluation in COCO protocol.
 
@@ -462,7 +462,7 @@ class CocoDataset(CustomDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
-            cocoEval.params.maxDets = list(proposal_nums)
+            # cocoEval.params.maxDets = list(proposal_nums)
             cocoEval.params.iouThrs = iou_thrs
             # mapping of cocoEval.stats
             coco_metric_names = {
