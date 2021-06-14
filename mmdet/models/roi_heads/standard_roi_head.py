@@ -120,6 +120,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
+        print(bbox_feats)
+        print(bbox_feats.shape)
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
         bbox_results = dict(
