@@ -4,7 +4,7 @@ from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
-
+from .sar_modules.spatial_relation_module.spatial_relation_module import SpatialRelationModule
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -120,10 +120,11 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-        print(bbox_feats)
-        print(bbox_feats.shape)
-        cls_score, bbox_pred = self.bbox_head(bbox_feats)
+        
+        # Insert module 1
+        sr_module = SpatialRelationModule().cuda()
 
+        cls_score, bbox_pred = self.bbox_head(bbox_feats)
         bbox_results = dict(
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
