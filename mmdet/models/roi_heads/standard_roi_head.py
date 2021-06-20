@@ -67,7 +67,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-            proposals_lists (list[Tensors]): list of region proposals.
+            proposal_list (list[Tensors]): list of region proposals.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
@@ -89,7 +89,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 assign_result = self.bbox_assigner.assign(
                     proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
                     gt_labels[i])
-               
+
                 sampling_result = self.bbox_sampler.sample(
                     assign_result,
                     proposal_list[i],
@@ -104,17 +104,15 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                     gt_bboxes, gt_labels,
                                                     img_metas)
             losses.update(bbox_results['loss_bbox'])
-
         # mask head forward and loss
         if self.with_mask:
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
             losses.update(mask_results['loss_mask'])
-
         return losses
 
-    def _bbox_forward(self, x, rois):
+    def _bbox_forward(self, x, rois, img_metas):
         """Box head forward function used in both training and testing."""
         # TODO: a more flexible way to decide which feature maps to use
         # SingleRoIExtractor
@@ -122,12 +120,13 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-        
+
         # Module 1
-        d_model = 40
-        max_len = 3
-        sr_module = SpatialRelationModule(d_model, max_len).cuda()
-        aaaa
+        d_model = 8
+        sr_module = SpatialRelationModule(d_model).cuda()
+        fspa = sr_module(rois, img_metas)
+        import pdb; pdb.set_trace()
+        # aaaa
         
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
@@ -139,7 +138,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             img_metas):
         """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        bbox_results = self._bbox_forward(x, rois)
+
+        bbox_results = self._bbox_forward(x, rois, img_metas)
 
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)

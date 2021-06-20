@@ -43,7 +43,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=15,
+            num_classes=14,
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
                 target_means=[0.0, 0.0, 0.0, 0.0],
@@ -143,8 +143,8 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='CocoDataset',
-        ann_file='/content/wbf/coco_format/fold0/train.json',
-        img_prefix='/content/train',
+        ann_file='/root/workspace/cxr2021/datasets/coco_format/fold0/train.json',
+        img_prefix='/root/workspace/cxr2021/datasets/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True),
@@ -159,15 +159,13 @@ data = dict(
             dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
         ],
-        classes=('Aortic enlargement', 'Atelectasis', 'Calcification',
-                 'Cardiomegaly', 'Consolidation', 'ILD', 'Infiltration',
-                 'Lung Opacity', 'Nodule/Mass', 'Other lesion',
-                 'Pleural effusion', 'Pleural thickening', 'Pneumothorax',
-                 'Pulmonary fibrosis', 'No finding')),
+        classes=("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
+                 "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 
+                 "Pneumothorax", "No finding")),
     val=dict(
         type='CocoDataset',
-        ann_file='/content/wbf/coco_format/fold0/valid.json',
-        img_prefix='/content/train',
+        ann_file='/root/workspace/cxr2021/datasets/coco_format/fold0/valid.json',
+        img_prefix='/root/workspace/cxr2021/datasets/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -187,15 +185,13 @@ data = dict(
                     dict(type='Collect', keys=['img'])
                 ])
         ],
-        classes=('Aortic enlargement', 'Atelectasis', 'Calcification',
-                 'Cardiomegaly', 'Consolidation', 'ILD', 'Infiltration',
-                 'Lung Opacity', 'Nodule/Mass', 'Other lesion',
-                 'Pleural effusion', 'Pleural thickening', 'Pneumothorax',
-                 'Pulmonary fibrosis', 'No finding')),
+        classes=("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
+                 "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 
+                 "Pneumothorax", "No finding")),
     test=dict(
         type='CocoDataset',
-        ann_file='/content/wbf/coco_format/fold0/valid.json',
-        img_prefix='/content/train',
+        ann_file='/root/workspace/cxr2021/datasets/coco_format/fold0/valid.json',
+        img_prefix='/root/workspace/cxr2021/datasets/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -215,11 +211,9 @@ data = dict(
                     dict(type='Collect', keys=['img'])
                 ])
         ],
-        classes=('Aortic enlargement', 'Atelectasis', 'Calcification',
-                 'Cardiomegaly', 'Consolidation', 'ILD', 'Infiltration',
-                 'Lung Opacity', 'Nodule/Mass', 'Other lesion',
-                 'Pleural effusion', 'Pleural thickening', 'Pneumothorax',
-                 'Pulmonary fibrosis', 'No finding')))
+        classes=("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
+                 "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 
+                 "Pneumothorax", "No finding")))
 evaluation = dict(interval=1, metric='bbox', save_best='bbox_mAP')
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
@@ -235,14 +229,12 @@ log_config = dict(interval=100, hooks=[dict(type='TextLoggerHook')])
 custom_hooks = [dict(type='NumClassCheckHook')]
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-load_from = '/content/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+load_from = '/root/workspace/cxr2021/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 resume_from = None
 workflow = [('train', 1)]
-classes = ('Aortic enlargement', 'Atelectasis', 'Calcification',
-           'Cardiomegaly', 'Consolidation', 'ILD', 'Infiltration',
-           'Lung Opacity', 'Nodule/Mass', 'Other lesion', 'Pleural effusion',
-           'Pleural thickening', 'Pneumothorax', 'Pulmonary fibrosis',
-           'No finding')
-work_dir = '/content/drive/MyDrive/ChestX-Det/mmdetection/faster_rcnn_r50_fpn_1x_coco_1x_coco/vindrcxr'
+classes = ("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
+            "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 
+            "Pneumothorax", "No finding")
+work_dir = '/root/workspace/cxr2021/results/faster_rcnn_r50_fpn_1x_coco_1x_coco/chestxdet'
 seed = 2021
 gpu_ids = range(0, 1)
