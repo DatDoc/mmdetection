@@ -3,7 +3,7 @@ from mmdet.models import build_detector
 from mmdet.apis import train_detector
 from mmcv import Config
 
-cfg = Config.fromfile('./configs/my_configs/chestxdet_faster_rcnn_r50_fpn_1x_coco.py')
+cfg = Config.fromfile('./configs/my_configs/chestxdet_faster_rcnn_r50_fpn.py')
 print(f'Config:\n{cfg.pretty_text}')
 
 # Build dataset

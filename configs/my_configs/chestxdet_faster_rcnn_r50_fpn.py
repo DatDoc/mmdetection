@@ -108,7 +108,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='Resize', img_scale=(640,640), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(
         type='Normalize',
@@ -123,7 +123,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
+        img_scale=(640,640),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -143,12 +143,12 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='CocoDataset',
-        ann_file='/root/workspace/cxr2021/datasets/coco_format/fold0/train.json',
-        img_prefix='/root/workspace/cxr2021/datasets/train',
+        ann_file='/root/workspace/datasets/chestxdet/coco_format/fold0/train.json',
+        img_prefix='/root/workspace/datasets/chestxdet/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True),
-            dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+            dict(type='Resize', img_scale=(640,640), keep_ratio=True),
             dict(type='RandomFlip', flip_ratio=0.5),
             dict(
                 type='Normalize',
@@ -164,13 +164,13 @@ data = dict(
                  "Pneumothorax", "No finding")),
     val=dict(
         type='CocoDataset',
-        ann_file='/root/workspace/cxr2021/datasets/coco_format/fold0/valid.json',
-        img_prefix='/root/workspace/cxr2021/datasets/train',
+        ann_file='/root/workspace/datasets/chestxdet/coco_format/fold0/valid.json',
+        img_prefix='/root/workspace/datasets/chestxdet/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
                 type='MultiScaleFlipAug',
-                img_scale=(1333, 800),
+                img_scale=(640,640),
                 flip=False,
                 transforms=[
                     dict(type='Resize', keep_ratio=True),
@@ -190,13 +190,13 @@ data = dict(
                  "Pneumothorax", "No finding")),
     test=dict(
         type='CocoDataset',
-        ann_file='/root/workspace/cxr2021/datasets/coco_format/fold0/valid.json',
-        img_prefix='/root/workspace/cxr2021/datasets/train',
+        ann_file='/root/workspace/datasets/chestxdet/coco_format/fold0/valid.json',
+        img_prefix='/root/workspace/datasets/chestxdet/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
                 type='MultiScaleFlipAug',
-                img_scale=(1333, 800),
+                img_scale=(640,640),
                 flip=False,
                 transforms=[
                     dict(type='Resize', keep_ratio=True),
@@ -225,16 +225,16 @@ lr_config = dict(
     step=[8, 11])
 runner = dict(type='EpochBasedRunner', max_epochs=50)
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
-log_config = dict(interval=100, hooks=[dict(type='TextLoggerHook')])
+log_config = dict(interval=10, hooks=[dict(type='TextLoggerHook')])
 custom_hooks = [dict(type='NumClassCheckHook')]
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-load_from = '/root/workspace/cxr2021/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+load_from = '/root/workspace/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 resume_from = None
 workflow = [('train', 1)]
 classes = ("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
             "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 
             "Pneumothorax", "No finding")
-work_dir = '/root/workspace/cxr2021/results/faster_rcnn_r50_fpn_1x_coco_1x_coco/chestxdet'
+work_dir = '/root/workspace/results/faster_rcnn_r50_fpn_1x_coco_1x_coco/chestxdet'
 seed = 2021
 gpu_ids = range(0, 1)

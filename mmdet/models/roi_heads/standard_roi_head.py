@@ -35,21 +35,21 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = build_head(mask_head)
 
-    def forward_dummy(self, x, proposals):
-        """Dummy forward function."""
-        # bbox head
-        outs = ()
-        rois = bbox2roi([proposals])
-        if self.with_bbox:
-            bbox_results = self._bbox_forward(x, rois)
-            outs = outs + (bbox_results['cls_score'],
-                           bbox_results['bbox_pred'])
-        # mask head
-        if self.with_mask:
-            mask_rois = rois[:100]
-            mask_results = self._mask_forward(x, mask_rois)
-            outs = outs + (mask_results['mask_pred'], )
-        return outs
+    # def forward_dummy(self, x, proposals):
+    #     """Dummy forward function."""
+    #     # bbox head
+    #     outs = ()
+    #     rois = bbox2roi([proposals])
+    #     if self.with_bbox:
+    #         bbox_results = self._bbox_forward(x, rois)
+    #         outs = outs + (bbox_results['cls_score'],
+    #                        bbox_results['bbox_pred'])
+    #     # mask head
+    #     if self.with_mask:
+    #         mask_rois = rois[:100]
+    #         mask_results = self._mask_forward(x, mask_rois)
+    #         outs = outs + (mask_results['mask_pred'], )
+    #     return outs
 
     def forward_train(self,
                       x,
@@ -104,12 +104,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                     gt_bboxes, gt_labels,
                                                     img_metas)
             losses.update(bbox_results['loss_bbox'])
+        # import pdb; pdb.set_trace()
         # mask head forward and loss
         if self.with_mask:
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
             losses.update(mask_results['loss_mask'])
+        # import pdb; pdb.set_trace()
         return losses
 
     def _bbox_forward(self, x, rois, img_metas):
@@ -120,16 +122,18 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-
-        # Module 1
-        d_model = 8
-        sr_module = SpatialRelationModule(d_model).cuda()
-        fspa = sr_module(rois, img_metas)
-        import pdb; pdb.set_trace()
-        # aaaa
         
-        cls_score, bbox_pred = self.bbox_head(bbox_feats)
-
+        # Module 1
+        d_model = 8 # fixed d_model
+        sr_module = SpatialRelationModule(d_model).cuda()
+        fspa = torch.tensor(sr_module(rois, img_metas)).cuda().float() # convert to torch tensor
+        # Module 2
+        fcxt = None
+        # Module 3
+        fcate = None
+        
+        cls_score, bbox_pred = self.bbox_head(bbox_feats, fspa, fcxt, fcate)
+        
         bbox_results = dict(
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
@@ -140,14 +144,16 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi([res.bboxes for res in sampling_results])
 
         bbox_results = self._bbox_forward(x, rois, img_metas)
-
+        
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)
+        
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
                                         bbox_results['bbox_pred'], rois,
                                         *bbox_targets)
-
+        
         bbox_results.update(loss_bbox=loss_bbox)
+        # import pdb; pdb.set_trace()
         return bbox_results
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
@@ -364,7 +370,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         # Eliminate the batch dimension
         rois = rois.view(-1, 5)
-        bbox_results = self._bbox_forward(x, rois)
+        bbox_results = self._bbox_forward(x, rois, img_metas)
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
 

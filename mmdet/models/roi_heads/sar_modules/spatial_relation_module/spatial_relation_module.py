@@ -13,7 +13,7 @@ class SpatialRelationModule(nn.Module):
 
     def get_spatial_vector(self, rois, anatomical_parts):
         M = np.empty((0,40), float)
-        for roi in tqdm(rois):
+        for roi in rois:
             Mp = np.empty(40)
             # import pdb; pdb.set_trace()
             image_id = int(roi[0])

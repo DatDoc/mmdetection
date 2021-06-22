@@ -1,6 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 
+import torch
 from mmdet.models.builder import HEADS
 from mmdet.models.utils import build_linear_layer
 from .bbox_head import BBoxHead
@@ -85,14 +86,16 @@ class ConvFCBBoxHead(BBoxHead):
                 cls_channels = self.num_classes + 1
             self.fc_cls = build_linear_layer(
                 self.cls_predictor_cfg,
-                in_features=self.cls_last_dim,
+                # in_features=self.cls_last_dim,
+                in_features=1664,
                 out_features=cls_channels)
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
             self.fc_reg = build_linear_layer(
                 self.reg_predictor_cfg,
-                in_features=self.reg_last_dim,
+                # in_features=self.reg_last_dim,
+                in_features=1664,
                 out_features=out_dim_reg)
 
         if init_cfg is None:
@@ -148,7 +151,7 @@ class ConvFCBBoxHead(BBoxHead):
             last_layer_dim = self.fc_out_channels
         return branch_convs, branch_fcs, last_layer_dim
 
-    def forward(self, x):
+    def forward(self, x, fspa, fcxt, fcate):
         # shared part
         if self.num_shared_convs > 0:
             for conv in self.shared_convs:
@@ -157,24 +160,28 @@ class ConvFCBBoxHead(BBoxHead):
         if self.num_shared_fcs > 0:
             if self.with_avg_pool:
                 x = self.avg_pool(x)
-
+                 
             x = x.flatten(1)
-
+                 
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
+        # concate f and fspa
+        x = torch.cat((x, fspa), 1)
+
         # separate branches
         x_cls = x
         x_reg = x
 
         for conv in self.cls_convs:
             x_cls = conv(x_cls)
+        # import pdb; pdb.set_trace()
         if x_cls.dim() > 2:
             if self.with_avg_pool:
                 x_cls = self.avg_pool(x_cls)
             x_cls = x_cls.flatten(1)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
-
+        # import pdb; pdb.set_trace()
         for conv in self.reg_convs:
             x_reg = conv(x_reg)
         if x_reg.dim() > 2:
@@ -183,7 +190,8 @@ class ConvFCBBoxHead(BBoxHead):
             x_reg = x_reg.flatten(1)
         for fc in self.reg_fcs:
             x_reg = self.relu(fc(x_reg))
-
+        
+        
         cls_score = self.fc_cls(x_cls) if self.with_cls else None
         bbox_pred = self.fc_reg(x_reg) if self.with_reg else None
         return cls_score, bbox_pred
