@@ -31,7 +31,7 @@ def convert_state_dict(state_dict):
 
 
 def get_coord(input_path, image_size, ana_part_ids=[2,3,4,5,9]):
-    checkpoint="/root/workspace/cxr2021/pspnet_chestxray_best_model_4.pkl" # default
+    checkpoint="/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl" # default
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     classes = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
@@ -71,19 +71,22 @@ def get_coord(input_path, image_size, ana_part_ids=[2,3,4,5,9]):
     }
     anatomical_coords = dict()
     image_width, image_height = image_size
-    assert image_width == image_height, "width should be equal to height'"
-    for ana_part_id in ana_part_ids:
-        im_array = (pred[0 , ana_part_id] * 255).astype('uint8') # also threshold array
-        
-        contours, hierarchy = cv2.findContours(im_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        x_min, y_min, w, h = cv2.boundingRect(contours[0])
-        x_max, y_max = x_min + w, y_min + h
+    assert image_width == image_height, "width should be equal to height"
+    try:
+        for ana_part_id in ana_part_ids:
+            im_array = (pred[0 , ana_part_id] * 255).astype('uint8') # also threshold array
+            
+            contours, hierarchy = cv2.findContours(im_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            x_min, y_min, w, h = cv2.boundingRect(contours[0])
+            x_max, y_max = x_min + w, y_min + h
 
-        x_min, y_min = (x_min/512)*image_width, (y_min/512)*image_height
-        x_max, y_max = (x_max/512)*image_width, (y_max/512)*image_height
-        
-        anatomical_coords[categ[str(ana_part_id)]] = [x_min, y_min, x_max, y_max]
-    
+            x_min, y_min = (x_min/512)*image_width, (y_min/512)*image_height
+            x_max, y_max = (x_max/512)*image_width, (y_max/512)*image_height
+            
+            anatomical_coords[categ[str(ana_part_id)]] = [x_min, y_min, x_max, y_max]
+    except:
+        print(input_path)
+        # aaaaa
     return anatomical_coords
 
 if __name__ == "__main__":
@@ -96,8 +99,10 @@ if __name__ == "__main__":
         Right Lung: 5
         Heart: 9
     '''
-    ana_part_id = [2,3]
-    input_path = "/root/workspace/cxr2021/repo/mmdetection/mmdet/models/roi_heads/sar_modules/spatial_relation_module/pretrainedPSPNet/demo.png"
-    
-    checkpoint_path = "/root/workspace/cxr2021/pspnet_chestxray_best_model_4.pkl"
-    print(get_coord(ana_part_id, input_path, checkpoint_path))
+    # ana_part_id = [2,3]
+    # 69559.png 55931.png 46395.png
+    # input_path = "/root/workspace/repo/mmdetection/mmdet/models/roi_heads/sar_modules/spatial_relation_module/pretrainedPSPNet/demo.png"
+    input_path = "/root/workspace/datasets/chestxdet/train/36201.png"
+    image_size = (1024, 1024)
+    checkpoint_path = "/root/workspace/pspnet_chestxray_best_model_4.pkl"
+    print(get_coord(input_path, image_size))
