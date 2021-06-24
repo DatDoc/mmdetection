@@ -30,7 +30,7 @@ def convert_state_dict(state_dict):
     return new_state_dict
 
 
-def get_coord(input_path, image_size, ana_part_ids=[2,3,4,5,9]):
+def get_coord(input_path, image_size, ana_part_ids=[2,3,4,5,8]):
     checkpoint="/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl" # default
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
