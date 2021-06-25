@@ -32,6 +32,7 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
             self.init_mask_head(mask_roi_extractor, mask_head)
 
         self.init_assigner_sampler()
+        self.init_sar_module()
 
     @property
     def with_bbox(self):
@@ -48,6 +49,10 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
         """bool: whether the RoI head contains a `shared_head`"""
         return hasattr(self, 'shared_head') and self.shared_head is not None
 
+    @abstractmethod
+    def init_sar_module(self):
+        pass
+    
     @abstractmethod
     def init_bbox_head(self):
         """Initialize ``bbox_head``"""

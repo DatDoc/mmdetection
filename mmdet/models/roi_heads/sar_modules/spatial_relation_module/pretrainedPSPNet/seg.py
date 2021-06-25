@@ -1,6 +1,7 @@
 import cv2
 import pdb
 import os
+from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 import torchvision
@@ -30,7 +31,7 @@ def convert_state_dict(state_dict):
     return new_state_dict
 
 
-def get_coord(input_path, image_size, ana_part_ids=[2,3,4,5,8]):
+def get_coord(input_paths, ana_part_ids=[2,3,4,5,8]):
     checkpoint="/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl" # default
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -48,44 +49,44 @@ def get_coord(input_path, image_size, ana_part_ids=[2,3,4,5,8]):
     model.eval()
     model.to(device)
     
-    # preprocess image
-    img = cv2.imread(input_path, 1)
-    img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_CUBIC)
-    img = Transform(img)
-    img = img.unsqueeze(0)
-    img = img.to(device)
+    anatomical_dict = dict()
+    for input_path in tqdm(input_paths):
+        # preprocess image
+        img = cv2.imread(input_path, 1)
+        img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_CUBIC)
+        img = Transform(img)
+        img = img.unsqueeze(0)
+        img = img.to(device)
+        
+        # prediction
+        outputs = model(img)
+        pred = outputs.data.cpu().numpy()
+        pred = 1 / (1 + np.exp(-pred))  # sigmoid
+        pred[pred < 0.5] = 0
+        pred[pred > 0.5] = 1
+        
+        categ = { # switch left to right right to left 
+            "2": "right_scapula",
+            "3": "left_scapula",
+            "4": "right_lung",
+            "5": "left_lung",
+            "8": "heart"
+        }
+        anatomical_coord = dict()
+        for ana_part_id in ana_part_ids:
+            im_array = (pred[0 , ana_part_id] * 255).astype('uint8') # also threshold array
+            
+            contours, hierarchy = cv2.findContours(im_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            x_min, y_min, w, h = cv2.boundingRect(contours[0])
+            x_max, y_max = x_min + w, y_min + h
 
-    # prediction
-    outputs = model(img)
-    pred = outputs.data.cpu().numpy()
-    pred = 1 / (1 + np.exp(-pred))  # sigmoid
-    pred[pred < 0.5] = 0
-    pred[pred > 0.5] = 1
+            x_min, y_min = x_min/512, y_min/512
+            x_max, y_max = x_max/512, y_max/512
+            
+            anatomical_coord[categ[str(ana_part_id)]] = [x_min, y_min, x_max, y_max]
+        anatomical_dict[input_path] = anatomical_coord
     
-    categ = { # switch left to right right to left 
-        "2": "right_scapula",
-        "3": "left_scapula",
-        "4": "right_lung",
-        "5": "left_lung",
-        "8": "heart"
-    }
-    anatomical_coords = dict()
-    image_width, image_height = image_size
-    assert image_width == image_height, "width should be equal to height"
-
-    for ana_part_id in ana_part_ids:
-        im_array = (pred[0 , ana_part_id] * 255).astype('uint8') # also threshold array
-        
-        contours, hierarchy = cv2.findContours(im_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        x_min, y_min, w, h = cv2.boundingRect(contours[0])
-        x_max, y_max = x_min + w, y_min + h
-
-        x_min, y_min = (x_min/512)*image_width, (y_min/512)*image_height
-        x_max, y_max = (x_max/512)*image_width, (y_max/512)*image_height
-        
-        anatomical_coords[categ[str(ana_part_id)]] = [x_min, y_min, x_max, y_max]
-
-    return anatomical_coords
+    return anatomical_dict
 
 if __name__ == "__main__":
 

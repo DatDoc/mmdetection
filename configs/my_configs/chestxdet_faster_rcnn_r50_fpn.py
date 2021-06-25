@@ -90,7 +90,9 @@ model = dict(
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
-            debug=False)),
+            debug=False, 
+            ann_file='/root/workspace/datasets/chestxdet/coco_format/fold0/train.json',
+            img_prefix='/root/workspace/datasets/chestxdet/train')),
     test_cfg=dict(
         rpn=dict(
             nms_pre=1000,
@@ -139,7 +141,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=16,
     workers_per_gpu=4,
     train=dict(
         type='CocoDataset',
@@ -229,8 +231,9 @@ log_config = dict(interval=10, hooks=[dict(type='TextLoggerHook')])
 custom_hooks = [dict(type='NumClassCheckHook')]
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-load_from = '/root/workspace/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
-resume_from = None
+# load_from = '/root/workspace/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+load_from = None
+resume_from = "/root/workspace/results/faster_rcnn_r50_fpn_1x_coco_1x_coco/chestxdet/latest.pth"
 workflow = [('train', 1)]
 classes = ("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
             "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 

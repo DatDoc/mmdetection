@@ -1,11 +1,13 @@
 import torch
+import json
+import os
 
 from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 from .sar_modules.spatial_relation_module.spatial_relation_module import SpatialRelationModule
-
+from abc import ABCMeta, abstractmethod
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -34,6 +36,19 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.share_roi_extractor = True
             self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = build_head(mask_head)
+
+    # Module 1
+    def init_sar_module(self):
+        train_json_path = self.train_cfg['ann_file']
+        train_folder = self.train_cfg['img_prefix']
+        f = open(train_json_path,"r")
+        data = json.load(f)
+        image_paths = [os.path.join(train_folder, image_path['file_name']) for image_path in data['images']]
+
+        d_model = 8 # fixed d_model
+        self.sr_module = SpatialRelationModule(image_paths, d_model).cuda()
+        # return None
+        
 
     # def forward_dummy(self, x, proposals):
     #     """Dummy forward function."""
@@ -123,10 +138,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
         
-        # Module 1
-        d_model = 8 # fixed d_model
-        sr_module = SpatialRelationModule(d_model).cuda()
-        fspa = torch.tensor(sr_module(rois, img_metas)).cuda().float() # convert to torch tensor
+
+        fspa = torch.tensor(self.sr_module(rois, img_metas)).cuda().float() # convert to torch tensor
         # Module 2
         fcxt = None
         # Module 3
