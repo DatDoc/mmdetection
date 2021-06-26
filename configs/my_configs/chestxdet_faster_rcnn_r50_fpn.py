@@ -91,7 +91,6 @@ model = dict(
                 add_gt_as_proposals=True),
             pos_weight=-1,
             debug=False, 
-            ann_file='/root/workspace/datasets/chestxdet/coco_format/fold0/train.json',
             img_prefix='/root/workspace/datasets/chestxdet/train')),
     test_cfg=dict(
         rpn=dict(
@@ -141,7 +140,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=16,
+    samples_per_gpu=8,
     workers_per_gpu=4,
     train=dict(
         type='CocoDataset',
@@ -227,7 +226,7 @@ lr_config = dict(
     step=[8, 11])
 runner = dict(type='EpochBasedRunner', max_epochs=50)
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
-log_config = dict(interval=10, hooks=[dict(type='TextLoggerHook')])
+log_config = dict(interval=50, hooks=[dict(type='TextLoggerHook')])
 custom_hooks = [dict(type='NumClassCheckHook')]
 dist_params = dict(backend='nccl')
 log_level = 'INFO'

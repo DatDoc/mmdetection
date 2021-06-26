@@ -39,12 +39,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     # Module 1
     def init_sar_module(self):
-        train_json_path = self.train_cfg['ann_file']
         train_folder = self.train_cfg['img_prefix']
-        f = open(train_json_path,"r")
-        data = json.load(f)
-        image_paths = [os.path.join(train_folder, image_path['file_name']) for image_path in data['images']]
-
+        image_paths = [os.path.join(train_folder, image_id) for image_id in os.listdir(train_folder)]
         d_model = 8 # fixed d_model
         self.sr_module = SpatialRelationModule(image_paths, d_model).cuda()
         # return None
