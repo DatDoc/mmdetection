@@ -13,7 +13,8 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
                  bbox_head=None,
                  mask_roi_extractor=None,
                  mask_head=None,
-                 shared_head=None,
+                 shared_head=None, 
+                 sar_modules=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
@@ -31,8 +32,10 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
         if mask_head is not None:
             self.init_mask_head(mask_roi_extractor, mask_head)
 
+        if sar_modules is not None: # testing
+            self.init_sar_modules(sar_modules)
+
         self.init_assigner_sampler()
-        self.init_sar_module()
 
     @property
     def with_bbox(self):
@@ -50,7 +53,8 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
         return hasattr(self, 'shared_head') and self.shared_head is not None
 
     @abstractmethod
-    def init_sar_module(self):
+    def init_sar_modules(self):
+        """Initialize ``sar_modules``"""
         pass
     
     @abstractmethod

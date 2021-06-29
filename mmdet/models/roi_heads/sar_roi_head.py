@@ -1,13 +1,17 @@
 import torch
+import json
+import os
 
 from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import HEADS, build_head, build_roi_extractor
+from ..builder import build_sar_modules # testing
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
-
+from .sar_modules.spatial_relation_module import SpatialRelationModule
+from abc import ABCMeta, abstractmethod
 
 @HEADS.register_module()
-class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
+class SarRoiHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Simplest base roi head including one bbox head and one mask head."""
 
     def init_assigner_sampler(self):
@@ -34,21 +38,10 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = build_head(mask_head)
 
-    def forward_dummy(self, x, proposals):
-        """Dummy forward function."""
-        # bbox head
-        outs = ()
-        rois = bbox2roi([proposals])
-        if self.with_bbox:
-            bbox_results = self._bbox_forward(x, rois)
-            outs = outs + (bbox_results['cls_score'],
-                           bbox_results['bbox_pred'])
-        # mask head
-        if self.with_mask:
-            mask_rois = rois[:100]
-            mask_results = self._mask_forward(x, mask_rois)
-            outs = outs + (mask_results['mask_pred'], )
-        return outs
+    def init_sar_modules(self, sar_modules):
+        """Initialize ``sar_modules``"""
+        self.sar_modules = build_sar_modules(sar_modules)        
+
 
     def forward_train(self,
                       x,
@@ -66,7 +59,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-            proposals (list[Tensors]): list of region proposals.
+            proposal_list (list[Tensors]): list of region proposals.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
@@ -74,6 +67,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 boxes can be ignored when computing the loss.
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
+
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
@@ -87,6 +81,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 assign_result = self.bbox_assigner.assign(
                     proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
                     gt_labels[i])
+
                 sampling_result = self.bbox_sampler.sample(
                     assign_result,
                     proposal_list[i],
@@ -94,7 +89,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
-
         losses = dict()
         # bbox head forward and loss
         if self.with_bbox:
@@ -102,25 +96,31 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                     gt_bboxes, gt_labels,
                                                     img_metas)
             losses.update(bbox_results['loss_bbox'])
-
+        # import pdb; pdb.set_trace()
         # mask head forward and loss
         if self.with_mask:
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
             losses.update(mask_results['loss_mask'])
-
+        # import pdb; pdb.set_trace()
         return losses
 
-    def _bbox_forward(self, x, rois):
+    def _bbox_forward(self, x, rois, img_metas):
         """Box head forward function used in both training and testing."""
         # TODO: a more flexible way to decide which feature maps to use
+        # SingleRoIExtractor
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-        cls_score, bbox_pred = self.bbox_head(bbox_feats)
-
+        
+        import pdb; pdb.set_trace()
+        # convert to torch tensor
+        fsar = torch.tensor(self.sar_modules(rois, img_metas)).cuda().float()
+        
+        cls_score, bbox_pred = self.bbox_head(bbox_feats, fsar)
+        
         bbox_results = dict(
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
@@ -129,14 +129,16 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             img_metas):
         """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        bbox_results = self._bbox_forward(x, rois)
 
+        bbox_results = self._bbox_forward(x, rois, img_metas)
+        
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)
+        
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
                                         bbox_results['bbox_pred'], rois,
                                         *bbox_targets)
-
+        
         bbox_results.update(loss_bbox=loss_bbox)
         return bbox_results
 
@@ -244,6 +246,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def aug_test(self, x, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
+
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
@@ -282,6 +285,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def mask_onnx_export(self, x, img_metas, det_bboxes, det_labels, **kwargs):
         """Export mask branch to onnx which supports batch inference.
+
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
             img_metas (list[dict]): Image meta info.
@@ -289,9 +293,10 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 has shape [N, num_bboxes, 5].
             det_labels (Tensor): class labels of
                 shape [N, num_bboxes].
+
         Returns:
-            Tensor: The segmentation results of shape [N, num_bboxes,
-                image_height, image_width].
+            tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
+                and class labels of shape [N, num_bboxes].
         """
         # image shapes of images in the batch
 
@@ -323,12 +328,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def bbox_onnx_export(self, x, img_metas, proposals, rcnn_test_cfg,
                          **kwargs):
         """Export bbox branch to onnx which supports batch inference.
+
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
             img_metas (list[dict]): Image meta info.
             proposals (Tensor): Region proposals with
                 batch dimension, has shape [N, num_bboxes, 5].
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+
         Returns:
             tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
                 and class labels of shape [N, num_bboxes].
@@ -349,7 +356,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         # Eliminate the batch dimension
         rois = rois.view(-1, 5)
-        bbox_results = self._bbox_forward(x, rois)
+        bbox_results = self._bbox_forward(x, rois, img_metas)
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
 

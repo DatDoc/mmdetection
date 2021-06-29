@@ -32,12 +32,20 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
     roi_head=dict(
-        type='StandardRoIHead',
+        
+        type='SarRoiHead',
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
+            
+        sar_modules=dict(
+            type='SpatialRelationModule',
+            img_prefix='/root/workspace/datasets/chestxdet/train',
+            d_model=8,
+            pretrainedPSPNet='/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl'),
+
         bbox_head=dict(
             type='Shared2FCBBoxHead',
             in_channels=256,
@@ -90,8 +98,7 @@ model = dict(
                 neg_pos_ub=-1,
                 add_gt_as_proposals=True),
             pos_weight=-1,
-            debug=False, 
-            img_prefix='/root/workspace/datasets/chestxdet/train')),
+            debug=False)),
     test_cfg=dict(
         rpn=dict(
             nms_pre=1000,
@@ -140,7 +147,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
         type='CocoDataset',
@@ -231,8 +238,8 @@ custom_hooks = [dict(type='NumClassCheckHook')]
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 # load_from = '/root/workspace/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
-load_from = None
-resume_from = "/root/workspace/results/faster_rcnn_r50_fpn_1x_coco_1x_coco/chestxdet/latest.pth"
+load_from = "/root/workspace/repo/mmdetection/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth"
+resume_from = None
 workflow = [('train', 1)]
 classes = ("Atelectasis", "Calcification", "Cardiomegaly", "Consolidation", "Diffuse Nodule", 
             "Effusion", "Emphysema", "Fibrosis", "Fracture", "Mass", "Nodule", "Pleural Thickening", 

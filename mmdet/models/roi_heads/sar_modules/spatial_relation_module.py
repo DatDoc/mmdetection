@@ -2,16 +2,19 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 import math
+import os
 import copy
 import numpy as np
-from .positional_encoding import PositionalEncoding
-from .pretrainedPSPNet.seg import get_coord
+from .seg import get_coord
+from mmdet.models.builder import SAR_MODULES
 
+@SAR_MODULES.register_module()
 class SpatialRelationModule(nn.Module):
-    def __init__(self, input_paths, d_model):
+    def __init__(self, img_prefix, d_model, pretrained_path):
         super(SpatialRelationModule, self).__init__()
         self.d_model = d_model
-        self.anatomical_dict = get_coord(input_paths)
+        input_paths = [os.path.join(img_prefix, image_id) for image_id in os.listdir(img_prefix)]
+        self.anatomical_dict = get_coord(input_paths, pretrained_path)
 
     def get_spatial_vector(self, rois, anatomical_parts, image_size):
         M = np.empty((0,40), float)
@@ -57,6 +60,6 @@ class SpatialRelationModule(nn.Module):
         image_size = img_metas[0]["img_shape"][:2]
         res = [self.anatomical_dict[image_path] for image_path in image_paths]
         M = self.get_spatial_vector(rois, res, image_size)
-        # M.shape = (4096, 40)
+        # M.shape = (512, 40) if batch_sise = 1
         fspa = self.positional_encoding(M)
         return fspa

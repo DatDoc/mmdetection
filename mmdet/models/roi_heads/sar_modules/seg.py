@@ -31,8 +31,8 @@ def convert_state_dict(state_dict):
     return new_state_dict
 
 
-def get_coord(input_paths, ana_part_ids=[2,3,4,5,8]):
-    checkpoint="/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl" # default
+def get_coord(input_paths, pretrained_path, ana_part_ids=[2,3,4,5,8]):
+    checkpoint = pretrained_path # default
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     classes = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',

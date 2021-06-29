@@ -12,6 +12,7 @@ SHARED_HEADS = MODELS
 HEADS = MODELS
 LOSSES = MODELS
 DETECTORS = MODELS
+SAR_MODULES = MODELS
 
 
 def build_backbone(cfg):
@@ -32,6 +33,11 @@ def build_roi_extractor(cfg):
 def build_shared_head(cfg):
     """Build shared head."""
     return SHARED_HEADS.build(cfg)
+
+
+def build_sar_modules(cfg):
+    """Build sar modules."""
+    return SAR_MODULES.build(cfg)
 
 
 def build_head(cfg):
