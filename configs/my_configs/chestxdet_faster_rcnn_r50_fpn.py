@@ -44,7 +44,8 @@ model = dict(
             type='SpatialRelationModule',
             img_prefix='/root/workspace/datasets/chestxdet/train',
             d_model=8,
-            pretrainedPSPNet='/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl'),
+            pretrainedPSPNet='/root/workspace/datasets/chestxdet/pspnet_chestxray_best_model_4.pkl',
+            batch_size=2),
 
         bbox_head=dict(
             type='Shared2FCBBoxHead',
