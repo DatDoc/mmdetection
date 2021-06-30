@@ -74,7 +74,7 @@ class BBoxTestMixin:
         """
 
         rois = bbox2roi(proposals)
-        bbox_results = self._bbox_forward(x, rois, img_metas)
+        bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
@@ -127,7 +127,7 @@ class BBoxTestMixin:
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
                                      scale_factor, flip, flip_direction)
             rois = bbox2roi([proposals])
-            bbox_results = self._bbox_forward(x, rois, img_metas)
+            bbox_results = self._bbox_forward(x, rois)
             bboxes, scores = self.bbox_head.get_bboxes(
                 rois,
                 bbox_results['cls_score'],

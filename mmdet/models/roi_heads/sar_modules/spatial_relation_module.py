@@ -10,11 +10,10 @@ from mmdet.models.builder import SAR_MODULES
 
 @SAR_MODULES.register_module()
 class SpatialRelationModule(nn.Module):
-    def __init__(self, img_prefix, d_model, pretrained_path):
+    def __init__(self, img_prefix, d_model, pretrainedPSPNet):
         super(SpatialRelationModule, self).__init__()
         self.d_model = d_model
-        input_paths = [os.path.join(img_prefix, image_id) for image_id in os.listdir(img_prefix)]
-        self.anatomical_dict = get_coord(input_paths, pretrained_path)
+        self.anatomical_dict = get_coord(img_prefix, pretrainedPSPNet)
 
     def get_spatial_vector(self, rois, anatomical_parts, image_size):
         M = np.empty((0,40), float)

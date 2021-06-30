@@ -28,6 +28,7 @@ class ConvFCBBoxHead(BBoxHead):
                  num_reg_fcs=0,
                  conv_out_channels=256,
                  fc_out_channels=1024,
+                 additional_channels=0,
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=None,
@@ -51,6 +52,7 @@ class ConvFCBBoxHead(BBoxHead):
         self.num_reg_fcs = num_reg_fcs
         self.conv_out_channels = conv_out_channels
         self.fc_out_channels = fc_out_channels
+        self.additional_channels = additional_channels
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
@@ -78,6 +80,7 @@ class ConvFCBBoxHead(BBoxHead):
                 self.reg_last_dim *= self.roi_feat_area
 
         self.relu = nn.ReLU(inplace=True)
+
         # reconstruct fc_cls and fc_reg since input channels are changed
         if self.with_cls:
             if self.custom_cls_channels:
@@ -86,16 +89,14 @@ class ConvFCBBoxHead(BBoxHead):
                 cls_channels = self.num_classes + 1
             self.fc_cls = build_linear_layer(
                 self.cls_predictor_cfg,
-                # in_features=self.cls_last_dim,
-                in_features=1664,
+                in_features=self.cls_last_dim + self.additional_channels,
                 out_features=cls_channels)
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
             self.fc_reg = build_linear_layer(
                 self.reg_predictor_cfg,
-                # in_features=self.reg_last_dim,
-                in_features=1664,
+                in_features=self.reg_last_dim + self.additional_channels,
                 out_features=out_dim_reg)
 
         if init_cfg is None:
@@ -174,14 +175,12 @@ class ConvFCBBoxHead(BBoxHead):
 
         for conv in self.cls_convs:
             x_cls = conv(x_cls)
-        # import pdb; pdb.set_trace()
         if x_cls.dim() > 2:
             if self.with_avg_pool:
                 x_cls = self.avg_pool(x_cls)
             x_cls = x_cls.flatten(1)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
-        # import pdb; pdb.set_trace()
         for conv in self.reg_convs:
             x_reg = conv(x_reg)
         if x_reg.dim() > 2:
@@ -211,7 +210,6 @@ class Shared2FCBBoxHead(ConvFCBBoxHead):
             fc_out_channels=fc_out_channels,
             *args,
             **kwargs)
-
 
 @HEADS.register_module()
 class Shared4Conv1FCBBoxHead(ConvFCBBoxHead):

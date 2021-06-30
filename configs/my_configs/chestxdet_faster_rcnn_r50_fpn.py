@@ -50,6 +50,7 @@ model = dict(
             type='Shared2FCBBoxHead',
             in_channels=256,
             fc_out_channels=1024,
+            additional_channels=640, # spatial relation module
             roi_feat_size=7,
             num_classes=14,
             bbox_coder=dict(
@@ -147,7 +148,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=4,
     train=dict(
         type='CocoDataset',

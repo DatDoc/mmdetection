@@ -31,7 +31,7 @@ def convert_state_dict(state_dict):
     return new_state_dict
 
 
-def get_coord(input_paths, pretrained_path, ana_part_ids=[2,3,4,5,8]):
+def get_coord(img_prefix, pretrained_path, ana_part_ids=[2,3,4,5,8]):
     checkpoint = pretrained_path # default
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -50,7 +50,8 @@ def get_coord(input_paths, pretrained_path, ana_part_ids=[2,3,4,5,8]):
     model.to(device)
     
     anatomical_dict = dict()
-    for input_path in tqdm(input_paths):
+    for image_id in tqdm(os.listdir(img_prefix)):
+        input_path = os.path.join(img_prefix, image_id)
         # preprocess image
         img = cv2.imread(input_path, 1)
         img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_CUBIC)
@@ -85,7 +86,6 @@ def get_coord(input_paths, pretrained_path, ana_part_ids=[2,3,4,5,8]):
             
             anatomical_coord[categ[str(ana_part_id)]] = [x_min, y_min, x_max, y_max]
         anatomical_dict[input_path] = anatomical_coord
-    
     return anatomical_dict
 
 if __name__ == "__main__":
