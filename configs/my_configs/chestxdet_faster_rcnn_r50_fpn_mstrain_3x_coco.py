@@ -195,6 +195,7 @@ model = dict(
             type='Shared2FCBBoxHead',
             in_channels=256,
             fc_out_channels=1024,
+            additional_channels=640,
             roi_feat_size=7,
             num_classes=14,
             bbox_coder=dict(

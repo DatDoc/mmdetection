@@ -15,15 +15,15 @@ class SpatialRelationModule(nn.Module):
         self.d_model = d_model
         self.anatomical_dict = get_coord(img_prefix, pretrainedPSPNet, batch_size)
 
-    def get_spatial_vector(self, rois, anatomical_parts, image_size):
-        M = np.empty((0,40), float)
-        image_width, image_height = image_size
+    def get_spatial_vector(self, rois, anatomical_parts, image_sizes):
+        M = np.empty((0,40), float) # size = [n, 40]
         
         for roi in rois:
             Mp = np.empty(40)
-            # import pdb; pdb.set_trace()
+
             image_id = int(roi[0])
             _anatomical_parts = copy.deepcopy(anatomical_parts[image_id])
+            image_width, image_height = image_sizes[][:2]
             
             for part in _anatomical_parts:
                 _anatomical_parts[part][0] *= image_width
@@ -55,10 +55,14 @@ class SpatialRelationModule(nn.Module):
         return fspa
 
     def forward(self, rois, img_metas):
+        import time
+        start = time.time()
         image_paths = [item["filename"] for item in img_metas]
-        image_size = img_metas[0]["img_shape"][:2]
+        image_sizes = [item["img_shape"] for item in img_metas]
         res = [self.anatomical_dict[image_path] for image_path in image_paths]
-        M = self.get_spatial_vector(rois, res, image_size)
+        M = self.get_spatial_vector(rois, res, image_sizes)
         # M.shape = (512, 40) if batch_sise = 1
         fspa = self.positional_encoding(M)
+        end = time.time()
+        print("[INFO] fspa compute time: {}".format(end - start))
         return fspa

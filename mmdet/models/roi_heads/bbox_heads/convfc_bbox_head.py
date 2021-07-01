@@ -152,7 +152,7 @@ class ConvFCBBoxHead(BBoxHead):
             last_layer_dim = self.fc_out_channels
         return branch_convs, branch_fcs, last_layer_dim
 
-    def forward(self, x, fsar):
+    def forward(self, x, fsar=None):
         # shared part
         if self.num_shared_convs > 0:
             for conv in self.shared_convs:
@@ -166,8 +166,9 @@ class ConvFCBBoxHead(BBoxHead):
                  
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
-        # concate f and fsar
-        x = torch.cat((x, fsar), 1)
+        if fsar is not None:
+            # concate f and fsar
+            x = torch.cat((x, fsar), 1)
 
         # separate branches
         x_cls = x
