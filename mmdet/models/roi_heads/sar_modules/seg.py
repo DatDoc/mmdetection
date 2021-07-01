@@ -99,5 +99,14 @@ def get_coord(img_prefix, pretrained_path, batch_size, ana_part_ids=[2,3,4,5,8])
         im_arrays = (preds[:, ana_part_ids] * 255).astype('uint8') # (4, 5, 512, 512)
         for image_id, im_array in zip(image_ids, im_arrays):
             anatomical_dict[image_id] = get_ana_bboxes(im_array, ana_part_ids)
-    
+    # anatomical_dict = dict()
+    # for image_id in tqdm(os.listdir(img_prefix)):
+    #     image_path = os.path.join(img_prefix, image_id)
+    #     anatomical_dict[image_path] = {
+    #         'right_scapula': [0.0, 0.0, 1.0, 1.0], 
+    #         'left_scapula': [0.0, 0.0, 1.0, 1.0], 
+    #         'right_lung': [0.0, 0.0, 1.0, 1.0], 
+    #         'left_lung': [0.0, 0.0, 1.0, 1.0], 
+    #         'heart': [0.0, 0.0, 1.0, 1.0]
+    #         }
     return anatomical_dict
