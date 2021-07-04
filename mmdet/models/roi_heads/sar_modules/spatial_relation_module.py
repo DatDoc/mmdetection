@@ -15,18 +15,20 @@ class SpatialRelationModule(nn.Module):
         self.d_model = d_model
         self.anatomical_dict = get_coord(img_prefix, pretrainedPSPNet, batch_size)
 
-    def compute_Mp_vector(self, roi, _anatomical_part, wl, hl):
+    def compute_Mp_vector(self, roi, _anatomical_part):
         Mp = np.empty(40, float)
         for idx, part in enumerate(_anatomical_part):
             ana_part_coord = _anatomical_part[part]
-            Mp[idx*self.d_model+0] = (roi[0] - ana_part_coord[0]) / wl
-            Mp[idx*self.d_model+1] = (roi[1] - ana_part_coord[1]) / hl
-            Mp[idx*self.d_model+2] = (roi[0] - ana_part_coord[2]) / wl
-            Mp[idx*self.d_model+3] = (roi[1] - ana_part_coord[3]) / hl
-            Mp[idx*self.d_model+4] = (roi[2] - ana_part_coord[0]) / wl
-            Mp[idx*self.d_model+5] = (roi[3] - ana_part_coord[1]) / hl
-            Mp[idx*self.d_model+6] = (roi[2] - ana_part_coord[2]) / wl
-            Mp[idx*self.d_model+7] = (roi[3] - ana_part_coord[3]) / hl
+            ana_width = ana_part_coord[2] - ana_part_coord[0]
+            ana_height = ana_part_coord[3] - ana_part_coord[1]
+            Mp[idx*self.d_model+0] = (roi[0] - ana_part_coord[0]) / ana_width
+            Mp[idx*self.d_model+1] = (roi[3] - ana_part_coord[3]) / ana_height
+            Mp[idx*self.d_model+2] = (roi[0] - ana_part_coord[2]) / ana_width
+            Mp[idx*self.d_model+3] = (roi[3] - ana_part_coord[1]) / ana_height
+            Mp[idx*self.d_model+4] = (roi[2] - ana_part_coord[0]) / ana_width
+            Mp[idx*self.d_model+5] = (roi[1] - ana_part_coord[3]) / ana_height
+            Mp[idx*self.d_model+6] = (roi[2] - ana_part_coord[2]) / ana_width
+            Mp[idx*self.d_model+7] = (roi[1] - ana_part_coord[1]) / ana_height
         return Mp
 
     def get_spatial_vector(self, rois, anatomical_parts, image_sizes):
@@ -40,13 +42,13 @@ class SpatialRelationModule(nn.Module):
                 _anatomical_part[part][1] *= image_height
                 _anatomical_part[part][2] *= image_width
                 _anatomical_part[part][3] *= image_height
-            wl = _anatomical_part["right_lung"][2] - _anatomical_part["left_lung"][0]
-            hl = _anatomical_part["right_lung"][3] - _anatomical_part["left_lung"][1]
+            # wl = _anatomical_part["right_lung"][2] - _anatomical_part["left_lung"][0]
+            # hl = _anatomical_part["right_lung"][3] - _anatomical_part["left_lung"][1]
             
             image_rois = image_rois.detach().cpu().numpy()
 
             Mp = np.apply_along_axis(
-                self.compute_Mp_vector, 1, image_rois[:,1:], _anatomical_part, wl, hl)
+                self.compute_Mp_vector, 1, image_rois[:,1:], _anatomical_part)
             M = np.append(M, Mp, axis=0)
         return M
 
