@@ -22,13 +22,13 @@ class SpatialRelationModule(nn.Module):
             ana_width = ana_part_coord[2] - ana_part_coord[0]
             ana_height = ana_part_coord[3] - ana_part_coord[1]
             Mp[idx*self.d_model+0] = (roi[0] - ana_part_coord[0]) / ana_width
-            Mp[idx*self.d_model+1] = (roi[3] - ana_part_coord[3]) / ana_height
+            Mp[idx*self.d_model+1] = (roi[1] - ana_part_coord[1]) / ana_height
             Mp[idx*self.d_model+2] = (roi[0] - ana_part_coord[2]) / ana_width
-            Mp[idx*self.d_model+3] = (roi[3] - ana_part_coord[1]) / ana_height
+            Mp[idx*self.d_model+3] = (roi[1] - ana_part_coord[3]) / ana_height
             Mp[idx*self.d_model+4] = (roi[2] - ana_part_coord[0]) / ana_width
-            Mp[idx*self.d_model+5] = (roi[1] - ana_part_coord[3]) / ana_height
+            Mp[idx*self.d_model+5] = (roi[3] - ana_part_coord[1]) / ana_height
             Mp[idx*self.d_model+6] = (roi[2] - ana_part_coord[2]) / ana_width
-            Mp[idx*self.d_model+7] = (roi[1] - ana_part_coord[1]) / ana_height
+            Mp[idx*self.d_model+7] = (roi[3] - ana_part_coord[3]) / ana_height
         return Mp
 
     def get_spatial_vector(self, rois, anatomical_parts, image_sizes):
